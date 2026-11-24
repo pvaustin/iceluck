@@ -266,3 +266,13 @@ body.gated{overflow:hidden}
 .privacy-copy a,.privacy-footer a{text-decoration:underline;text-underline-offset:3px}
 .privacy-footer{margin-top:6px!important}
 .privacy-section:focus{outline-offset:-4px}
+
+/* v7: mobile-only floating WhatsApp button. Hidden on desktop and while the age gate, cart or details pop-up is open. */
+.wa-float{display:none}
+@media (max-width:768px){
+  .wa-float{position:fixed;z-index:800;right:calc(14px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.28)}
+  .wa-float.is-tucked{opacity:0;visibility:hidden;pointer-events:none}
+  .wa-float:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+  body.gated .wa-float,body.cart-open .wa-float,body.modal-open .wa-float{display:none}
+  .site-footer{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+}

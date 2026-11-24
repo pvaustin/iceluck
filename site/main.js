@@ -86,15 +86,14 @@
     if(d){d.cities.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;F.city.appendChild(o)});if(d.cities.length===1)F.city.value=d.cities[0]}
     F.city.disabled=!d}
   function clean(s){return String(s||'').replace(/\s+/g,' ').trim()}
-  function phoneDigits(v){var s=String(v||'').replace(/[\s.\-()]/g,'');var m=s.match(/^(?:\+57|0057|57)?(3\d{9})$/);return m?m[1]:null}
-  function fmtPhone(d){return '+57 '+d.slice(0,3)+' '+d.slice(3,6)+' '+d.slice(6)}
+  /* v7: any reasonable phone format (mobile or landline, optional +57); sanity check only: allowed characters and 7–15 digits */
+  function phoneOk(v){var s=String(v||'').trim();if(!/^\+?[\d\s.\-()\/]+$/.test(s))return false;var n=s.replace(/\D/g,'').length;return n>=7&&n<=15}
   var RULES={
     name:function(v){v=clean(v);if(!v)return 'Escribe tu nombre completo.';if(v.length<3||!/\p{L}/u.test(v))return 'Escribe un nombre válido.';if(v.split(' ').length<2)return 'Escribe tu nombre y apellido.';return ''},
-    phone:function(v){if(!clean(v))return 'Escribe tu número de celular.';return phoneDigits(v)?'':'Escribe un celular colombiano de 10 dígitos que empiece por 3 (ej.: 300 123 4567).'},
+    phone:function(v){if(!clean(v))return 'Escribe tu número de celular o teléfono.';return phoneOk(v)?'':'Escribe un número de teléfono válido, con al menos 7 dígitos (ej.: 300 123 4567).'},
     dept:function(v){return v?'':'Selecciona el departamento.'},
     city:function(v){return v?'':(F.dept.value?'Selecciona la ciudad o municipio.':'Primero selecciona el departamento y luego la ciudad o municipio.')},
     address:function(v){v=clean(v);if(!v)return 'Escribe la dirección de entrega.';return v.length<5?'Escribe la dirección completa (ej.: Calle 10 # 43-12).':''},
-    hood:function(v){return clean(v).length>=2?'':'Escribe el barrio.'},
     consent:function(v,el){return el.checked?'':'Debes autorizar el uso de tus datos para enviar el pedido.'}
   };
   var touched={},showAll=false;
@@ -102,8 +101,8 @@
   function paint(k){var e=err(k),show=(showAll||touched[k])&&e,box=document.getElementById(F[k].id+'-error');
     box.textContent=show?e:'';box.hidden=!show;if(show)F[k].setAttribute('aria-invalid','true');else F[k].removeAttribute('aria-invalid')}
   function invalid(){return Object.keys(RULES).filter(function(k){return !!err(k)})}
-  function deliveryLines(){var dname=(LOC.filter(function(x){return x.code===F.dept.value})[0]||{}).name||'';var pd=phoneDigits(F.phone.value);
-    var L=[['Nombre',clean(F.name.value)],['Celular',pd?fmtPhone(pd):clean(F.phone.value)],['Dirección',clean(F.address.value)],['Apto / Torre / Casa',clean(F.unit.value)],['Barrio',clean(F.hood.value)],['Ciudad / Municipio',F.city.value],['Departamento',dname],['Indicaciones',clean(F.notes.value)]];
+  function deliveryLines(){var dname=(LOC.filter(function(x){return x.code===F.dept.value})[0]||{}).name||'';
+    var L=[['Nombre',clean(F.name.value)],['Celular',String(F.phone.value).trim()],['Dirección',clean(F.address.value)],['Apto / Torre / Casa',clean(F.unit.value)],['Barrio',clean(F.hood.value)],['Ciudad / Municipio',F.city.value],['Departamento',dname],['Indicaciones',clean(F.notes.value)]];
     return L.filter(function(x){return x[1]}).map(function(x){return x[0]+': '+x[1]})}
   function updateCheckout(){
     var t=total(),bad=invalid(),can=t>0&&!bad.length;
@@ -165,5 +164,12 @@
   document.addEventListener('keydown',function(e){if(pm.hidden)return;
     if(e.key==='Escape'){e.stopPropagation();closeModal();return}
     if(e.key==='Tab')trap(e,pm)});
+
+  /* v7: floating WhatsApp button (mobile). CSS hides it on desktop and while the gate, cart or pop-up is open.
+     On short phones it would sit on the last flavour card's +/− buttons, so it stays tucked away until those cards scroll clear of it. */
+  var waf=document.getElementById('wa-float'),prodList=document.querySelector('.products');
+  function placeFloat(){if(!waf||!prodList)return;waf.classList.remove('is-tucked');var b=waf.getBoundingClientRect();if(!b.width)return;
+    var p=prodList.getBoundingClientRect(),hit=p.left<b.right&&p.right>b.left&&p.top<b.bottom&&p.bottom>b.top;waf.classList.toggle('is-tucked',hit)}
+  window.addEventListener('scroll',placeFloat,{passive:true});window.addEventListener('resize',placeFloat);window.addEventListener('load',placeFloat);placeFloat();
   render();
 })();
